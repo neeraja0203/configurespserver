@@ -1,0 +1,112 @@
+ {
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "domainName": {
+      "type": "string"
+    },
+    "localAdminUserName": {
+      "type": "string"
+    },
+    "sharePointSetupUserAccountUserName": {
+      "type": "string"
+    },
+    "sharePointFarmAccountUserName": {
+      "type": "string"
+    },
+    "configDatabaseName": {
+      "type": "string"
+    },
+    "administrationContentDatabaseName": {
+      "type": "string"
+    },
+    "sqlvmName": {
+      "type": "string"
+    },
+    "localAdminPassword": {
+      "type": "securestring"
+    },
+    "sharePointSetupUserAccountPassword": {
+            "type": "securestring"
+        },
+        "sharePointFarmAccountPassword": {
+            "type": "securestring"
+        },
+    "sharePointFarmPassphrasePassword": {
+      "type": "securestring"
+    },
+    "fqdn": {
+      "type": "string"
+    },
+    "sharepointFarmName": {
+      "type": "string"
+    },
+    "ContentDatabaseName": {
+      "type": "string"
+    },
+    
+      "spSiteTemplateName": {
+      "type": "string"
+    }
+
+  },
+  "resources": [
+     {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('vmName'),'/ConfigureSPServer')]",
+      "apiVersion": "2015-06-15",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('vmName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.4",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUri": "concat[variables('spConfigureModulesURL'),'\\',variables('spConfigurationFunction')]",
+          "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -ConfigureSharePointServer.ps1",
+          "wmfVersion": "4.0",
+          "Properties": {
+            "DomainName": "[parameters('domainName')]",
+            "AdminCreds": {
+              "UserName": "[parameters('localAdminUserName')]",
+              "Password": "PrivateSettingsRef:AdminPassword"
+            },
+            "SharePointSetupUserAccountcreds": {
+              "UserName": "[parameters('sharePointSetupUserAccountUserName')]",
+              "Password": "PrivateSettingsRef:SharePointSetupUserAccountPassword"
+            },
+            "SharePointFarmAccountcreds": {
+              "UserName": "[parameters('sharePointFarmAccountUserName')]",
+              "Password": "PrivateSettingsRef:SharePointFarmAccountPassword"
+            },
+            "SharePointFarmPassphrasecreds": {
+              "UserName": "ignore",
+              "Password": "PrivateSettingsRef:SharePointFarmPassphrasePassword"
+            },
+            "DatabaseName": "[parameters('configDatabaseName')]",
+            "AdministrationContentDatabaseName": "[parameters('administrationContentDatabaseName')]",
+            "DatabaseServer": "[concat(parameters('sqlVMName'),'.',parameters('domainName'))]",
+            "Configuration": "[concat('{\"roles\":[{\"type\":\"application\",\"properties\":{\"fqdn\":\"',parameters('fqdn'),'\",\"port\":8080}},{\"type\":\"web\",\"properties\":{\"webApp\":{\"name\":\"',parameters('sharepointFarmName'),'\",\"applicationPool\":\"',parameters('sharepointFarmName'),' AppPool\",\"applicationPoolAccount\":\"', parameters('sharePointFarmAccountUserName'),'\",\"url\":\"http://',parameters('fqdn'),'\",\"port\":80,\"hostHeader\":\"',parameters('fqdn'),'\",\"databaseName\":\"',parameters('contentDatabaseName'),'\"},\"site\":{\"name\":\"',parameters('sharepointFarmName'),'\",\"template\":\"',parameters('spSiteTemplateName'),'\",\"url\":\"http://',parameters('fqdn'),'\",\"ownerAliasDomain\":\"',parameters('domainName'),'\",\"ownerAliasUserName\":\"',parameters('sharePointFarmAccountUserName'),'\",\"secondaryOwnerAliasDomain\":\"',parameters('domainName'),'\",\"secondaryOwnerAliasUserName\":\"',parameters('localAdminUserName'),'\"}}}],\"configureForHa\":\"False\",\"loadBalancedSetProbePort\":0}')]"
+          }
+        },
+        "protectedSettings": {
+          "Items": {
+            "AdminPassword": "[parameters('localAdminPassword')]",
+            "SharePointSetupUserAccountPassword": "[parameters('sharePointSetupUserAccountPassword')]",
+            "SharePointFarmAccountPassword": "[parameters('sharePointFarmAccountPassword')]",
+            "SharePointFarmPassphrasePassword": "[parameters('sharePointFarmPassphrasePassword')]"
+          }
+        }
+      }
+    }
+    ]
+ }
